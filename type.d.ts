@@ -93,6 +93,8 @@ interface IGetRepairReceptions {
   isDischarged?: boolean;
   isTemporaryRelease?: boolean | null;
   vehicleStatus?: 'Resident' | 'TempReleased' | 'Released';
+  returnDateTime?: string;
+  daysInWorkshop?: number;
 }
 interface IGenerateRepairRecaptionFactors {
   repairReception: {

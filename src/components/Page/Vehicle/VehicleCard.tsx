@@ -21,8 +21,17 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onRefresh }) => {
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Calculate days and hours in workshop using moment-jalaali for accurate conversion
+  // Calculate days and hours in workshop
+  // Use API-provided daysInWorkshop if available, otherwise calculate client-side
   const timeInWorkshop = useMemo(() => {
+    // If API provides daysInWorkshop, use it directly
+    if (vehicle.daysInWorkshop !== undefined && vehicle.daysInWorkshop !== null) {
+      const days = vehicle.daysInWorkshop;
+      const totalHours = days * 24;
+      return { days, hours: 0, totalHours };
+    }
+    
+    // Fallback: Calculate client-side if API doesn't provide it
     if (!vehicle.receptionDate) return { days: 0, hours: 0, totalHours: 0 };
     
     try {
@@ -39,8 +48,21 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onRefresh }) => {
         return { days: 0, hours: 0, totalHours: 0 };
       }
       
-      const now = moment();
-      const diffHours = now.diff(receptionMoment, 'hours');
+      // Determine end date: use ReturnDateTime if available, otherwise use current time
+      let endMoment: moment.Moment;
+      
+      if (vehicle.returnDateTime) {
+        try {
+          const returnDate = moment(vehicle.returnDateTime);
+          endMoment = returnDate.isValid() ? returnDate : moment();
+        } catch {
+          endMoment = moment();
+        }
+      } else {
+        endMoment = moment();
+      }
+      
+      const diffHours = endMoment.diff(receptionMoment, 'hours');
       
       // Ensure non-negative difference
       if (diffHours < 0) {
@@ -55,7 +77,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onRefresh }) => {
       console.error('Error calculating time in workshop:', error);
       return { days: 0, hours: 0, totalHours: 0 };
     }
-  }, [vehicle.receptionDate, vehicle.receptionTime]);
+  }, [vehicle.daysInWorkshop, vehicle.receptionDate, vehicle.receptionTime, vehicle.returnDateTime]);
 
   const daysInWorkshop = timeInWorkshop.days;
 
